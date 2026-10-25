@@ -1,8 +1,8 @@
-![Banner: crimson and black ink-wash background with the gold trigram ☶ (艮 Gèn, Mountain), the title and a red seal stamp](docs/img/banner.jpg)
+![Banner: crimson and black ink-wash background with the gold trigram ☷ (坤 Kūn, Earth), the title and a red seal stamp](docs/img/banner.jpg)
 
 # GeoAI hybrid: GA → PSO → ANFIS → CNN-LSTM probabilistic multi-site wind forecasting
 
-*風 wind · 山 terrain · 預測 forecast*
+*風 wind · 地 terrain · 預測 forecast*
 
 [![Live demo](https://img.shields.io/badge/Live%20demo-open-a3191b)](https://rishabh-bgp.github.io/geoai-hybrid-ga-pso-anfis-wind-forecasting/) [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Rishabh-bgp/geoai-hybrid-ga-pso-anfis-wind-forecasting/blob/main/notebooks/walkthrough.ipynb) [![CI](https://github.com/Rishabh-bgp/geoai-hybrid-ga-pso-anfis-wind-forecasting/actions/workflows/ci.yml/badge.svg)](https://github.com/Rishabh-bgp/geoai-hybrid-ga-pso-anfis-wind-forecasting/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) ![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![Data](https://img.shields.io/badge/data-synthetic-lightgrey)
 
@@ -18,7 +18,7 @@ Probabilistic multi-site wind speed forecasting with a GA → PSO → ANFIS → 
 
 The [live demo](https://rishabh-bgp.github.io/geoai-hybrid-ga-pso-anfis-wind-forecasting/) runs a small version of the model directly in your browser. It shows one week of synthetic wind speed, the model's next-hour forecast (gold) and the persistence forecast (grey). Use the sliders to move through the test period or add a gust to the latest reading, and the forecast updates. The metrics are shown as red seal-style badges.
 
-**About the design.** The look borrows from Chinese ink painting: dark paper, gold lines, crimson seals. Each repository has its own trigram from the I Ching and its own seal stamp. This one uses ☶ 艮 Gèn, Mountain, which stands for the ground and terrain that the geospatial site features describe. Across the series, 風 means wind and 預測 means forecast; the trigram for wind itself is ☴ 巽 Xùn. The motifs are decoration only and play no part in the method.
+**About the design.** The look borrows from Chinese ink painting: dark paper, gold lines, crimson seals. Each repository has its own trigram from the I Ching and its own seal stamp. This one uses ☷ 坤 Kūn, Earth, which stands for the ground and terrain that the geospatial site features describe. Across the series, 風 means wind and 預測 means forecast; the trigram for wind itself is ☴ 巽 Xùn. The motifs are decoration only and play no part in the method.
 
 ## Architecture · 架構
 
