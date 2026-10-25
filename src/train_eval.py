@@ -36,13 +36,13 @@ def crps_from_quantiles(q, y):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--csv", default="data/synthetic_sites.csv" if os.path.exists("data/synthetic_sites.csv") else None, help="multi-site CSV (timestamp,site,lat,lon,elevation,wind_speed)")
+    ap.add_argument("--csv", default="data/synthetic/synthetic_sites.csv" if os.path.exists("data/synthetic/synthetic_sites.csv") else None, help="multi-site CSV (timestamp,site,lat,lon,elevation,wind_speed)")
     ap.add_argument("--horizons", default="1,6,24"); ap.add_argument("--lookback", type=int, default=48)
     ap.add_argument("--epochs", type=int, default=8); ap.add_argument("--quick", action="store_true")
     ap.add_argument("--out", default="results"); a = ap.parse_args()
     hz = [int(h) for h in a.horizons.split(",")]
     ga_kw, pso_kw, search_ep = dict(pop=6, gens=3), dict(particles=4, iters=3), 3
-    if a.quick: ga_kw, pso_kw, search_ep, a.epochs, a.lookback = dict(pop=3, gens=2), dict(particles=2, iters=1), 1, 3, 24
+    if a.quick: ga_kw, pso_kw, search_ep, a.epochs, a.lookback = dict(pop=3, gens=1), dict(particles=2, iters=1), 1, 3, 24
     df = load_sites_csv(a.csv) if a.csv else synthetic_sites(n_hours=24 * (40 if a.quick else 90))
     W, static, names = to_tensor(df)
     T = len(W); a1, a2 = int(T * .7), int(T * .85)
@@ -50,7 +50,8 @@ def main():
     st = (static - static.mean(0)) / (static.std(0) + 1e-6)
     def part(lo, hi):
         X, Y, idx = windows(Wn[lo:hi], a.lookback, hz)
-        return torch.tensor(X), torch.tensor(st[idx]), torch.tensor(Y)
+        last = X[:, -1, :1]   # target site's last reading: predict the change from it (residual on persistence)
+        return torch.tensor(X), torch.tensor(st[idx]), torch.tensor(Y - last)
     tr, va, te = part(0, a1), part(a1 - a.lookback, a2), part(a2 - a.lookback, T)
     log = []; L = lambda s: (print(s), log.append(s))
     best, _ = ga(lambda c: train(c, (tr, va), search_ep)[1], log=L, **ga_kw)
@@ -58,7 +59,8 @@ def main():
                 [(-3.5, -2.0), (0.0, 0.3)], log=L, **pso_kw)
     cfg = {**best, "lr": float(10 ** gb[0]), "dropout": float(gb[1])}
     m, _ = train(cfg, (tr, va), a.epochs)
-    q = mc_predict(m, te[0], te[1]) * sd + mu; y = te[2].numpy() * sd + mu
+    last = te[0][:, -1, :1].numpy()
+    q = (mc_predict(m, te[0], te[1]) + last[:, :, None]) * sd + mu; y = (te[2].numpy() + last) * sd + mu
     res = {"config": cfg, "search_log": log, "horizons": {}}
     for j, h in enumerate(hz):
         qj, yj = q[:, j], y[:, j]

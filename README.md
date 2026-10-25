@@ -1,35 +1,37 @@
+![Banner: crimson and black ink-wash background with the gold trigram ☶ (艮 Gèn, Mountain), the title and a red seal stamp](docs/img/banner.jpg)
+
 # GeoAI hybrid: GA → PSO → ANFIS → CNN-LSTM probabilistic multi-site wind forecasting
 
-> **This is a reimplementation.** The original code and the 2018 SCADA data used in the paper are not available
-> (the original SCADA data is confidential), so this repository is a clean, independent re-implementation of the
-> method as described in the paper. Results **will differ** from the published numbers; nothing here claims to
-> reproduce them.
+*風 wind · 山 terrain · 預測 forecast*
 
-## Paper
+[![Live demo](https://img.shields.io/badge/Live%20demo-open-a3191b)](https://rishabh-bgp.github.io/geoai-hybrid-ga-pso-anfis-wind-forecasting/) [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Rishabh-bgp/geoai-hybrid-ga-pso-anfis-wind-forecasting/blob/main/notebooks/walkthrough.ipynb) [![CI](https://github.com/Rishabh-bgp/geoai-hybrid-ga-pso-anfis-wind-forecasting/actions/workflows/ci.yml/badge.svg)](https://github.com/Rishabh-bgp/geoai-hybrid-ga-pso-anfis-wind-forecasting/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) ![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![Data](https://img.shields.io/badge/data-synthetic-lightgrey)
 
-Er. Rishabh Aryan and Prof. Dr. Tryambak Hiwarkar (2026). "A Unified GeoAI Hybrid Framework for African Windscapes: Integrating Evolutionary Swarm, Fuzzy-Neuro Computing, and Probabilistic Spatio-Temporal Wind Forecasting for Sustainable Regional Energy Planning." *African Journal of Geography and Regional Planning*, 13(1), 31–40.
+[![Screenshot of the live demo: one week of synthetic wind speed with the model forecast and the persistence forecast, plus sliders and metrics](docs/img/demo.jpg)](https://rishabh-bgp.github.io/geoai-hybrid-ga-pso-anfis-wind-forecasting/)
 
-## Method (as implemented)
+**GeoAI hybrid GA–PSO–ANFIS–CNN-LSTM** is the reference implementation of my paper on a probabilistic, multi-site **wind speed forecasting** method: a genetic algorithm (GA) picks the network architecture, particle swarm optimization (PSO) tunes the learning rate and dropout, an ANFIS fuzzy layer encodes the inputs, and a CNN-LSTM predicts quantiles with Monte-Carlo dropout for uncertainty.
+
+Probabilistic multi-site wind speed forecasting with a GA → PSO → ANFIS → CNN-LSTM hybrid, in PyTorch. The paper proposes combining geospatial site features with a two-level metaheuristic search (GA then PSO) around an ANFIS → CNN-LSTM quantile network, so that forecasts for many wind sites come with calibrated uncertainty (pinball loss, CRPS, interval coverage).
+
+**Try it:** [live demo](https://rishabh-bgp.github.io/geoai-hybrid-ga-pso-anfis-wind-forecasting/) · [notebook in Colab](https://colab.research.google.com/github/Rishabh-bgp/geoai-hybrid-ga-pso-anfis-wind-forecasting/blob/main/notebooks/walkthrough.ipynb)
+
+## Live demo
+
+The [live demo](https://rishabh-bgp.github.io/geoai-hybrid-ga-pso-anfis-wind-forecasting/) runs a small version of the model directly in your browser. It shows one week of synthetic wind speed, the model's next-hour forecast (gold) and the persistence forecast (grey). Use the sliders to move through the test period or add a gust to the latest reading, and the forecast updates. The metrics are shown as red seal-style badges.
+
+**About the design.** The look borrows from Chinese ink painting: dark paper, gold lines, crimson seals. Each repository has its own trigram from the I Ching and its own seal stamp. This one uses ☶ 艮 Gèn, Mountain, which stands for the ground and terrain that the geospatial site features describe. Across the series, 風 means wind and 預測 means forecast; the trigram for wind itself is ☴ 巽 Xùn. The motifs are decoration only and play no part in the method.
+
+## Architecture · 架構
 
 The five layers are:
 1. **Genetic algorithm** over architecture genes (CNN filters, LSTM hidden size, number of ANFIS rules), using elitism, uniform crossover and mutation.
-2. **Particle swarm optimisation** over continuous genes (log learning rate, dropout).
-3. **ANFIS:** first-order TSK with Gaussian membership functions. Normalised rule firing strengths and rule outputs are appended as features.
+2. **Particle swarm optimization** over continuous genes (log learning rate, dropout).
+3. **ANFIS:** first-order TSK with Gaussian membership functions. Normalized rule firing strengths and rule outputs are appended as features.
 4. **CNN-LSTM core:** two Conv1D blocks → 2-layer LSTM, plus a static site embedding (lat, lon, elevation) and Monte Carlo dropout at inference.
 5. **Quantile head:** τ = 0.05, 0.25, 0.5, 0.75 and 0.95, kept monotone, trained with pinball loss.
 
 The model takes all sites' history and predicts the target site at multiple horizons. For each horizon it reports MAE, RMSE, MAPE and R² of the median, the CRPS (quantile approximation), the 90% interval coverage, a coarse PIT histogram and the persistence RMSE.
 
-## Data
-
-- **`data/synthetic_sites.csv` is synthetic.** It was generated by the seeded script `scripts/make_synthetic.py`
-  (seed 0; 6 synthetic sites × 60 days hourly, spatially correlated through a shared lagged signal, with lat/lon/elevation). It contains no real measurements and exists so the code runs out of the box.
-- The original SCADA data is confidential and is **not** included.
-- Everything in `data/` except the synthetic CSV is git-ignored, so you can drop your own CSV there safely.
-- To use your own data: pass `--csv sites.csv` in long format with columns `timestamp,site,lat,lon,elevation,wind_speed`.
-- Regenerate the synthetic file: `python scripts/make_synthetic.py`
-
-## How to run
+## Quick start
 
 ```bash
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
@@ -41,23 +43,67 @@ python -m src.train_eval --csv sites.csv --horizons 1,6,24,72,168
 
 Outputs: `results/results.json` (config, GA/PSO log, per-horizon metrics).
 
-## Notebook
+Run the tests with `pytest -q`. They include a check that the browser demo's JavaScript gives the same predictions as Python (uses `node` if it is installed).
 
-`notebooks/walkthrough.ipynb` is a short, CPU-fast, step-by-step walkthrough on the committed synthetic CSV
-(load → build a small model → brief training → MAE/RMSE/MAPE/R² → plot). It is committed with its outputs and
-works in Anaconda Jupyter (Windows/macOS/Linux) and in Colab after cloning.
+## Notebook for examiners
 
-## Deviations from the paper
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Rishabh-bgp/geoai-hybrid-ga-pso-anfis-wind-forecasting/blob/main/notebooks/walkthrough.ipynb)
+
+`notebooks/walkthrough.ipynb` is a simplified, step-by-step version of the method, with all its code inside the notebook. It is saved with its outputs, so you can read it without running anything.
+
+To run it yourself:
+1. Click **Open in Colab** above (or open the file in Anaconda Jupyter).
+2. Choose **Runtime → Run all** (in Jupyter: **Run → Run All Cells**).
+3. Wait about a minute on a normal CPU. All the code is inside the notebook, so it runs on its own; it fetches the synthetic CSV from this repository (or regenerates it) if the file is not next to it.
+4. Read the printed table: the model's errors next to the *persistence* forecast ("next hour = this hour"). Lower MAE/RMSE and higher R² are better.
+
+## Data · 數據
+
+- **`data/synthetic/synthetic_sites.csv` is synthetic.** It was generated by the seeded script `scripts/make_synthetic.py`
+  (seed 0; 6 synthetic sites × 60 days hourly, spatially correlated through a shared lagged signal, with lat/lon/elevation). It contains no real measurements and exists so the code runs out of the box.
+- The original SCADA data is confidential and is **not** included.
+- Everything in `data/` except the synthetic CSV is git-ignored, so you can drop your own CSV there safely.
+- To use your own data: pass `--csv sites.csv` in long format with columns `timestamp,site,lat,lon,elevation,wind_speed`.
+- Regenerate the synthetic file: `python scripts/make_synthetic.py`
+
+## Results vs persistence · 結果
+
+These are the real numbers from this repository on **synthetic** data. They are not the paper's results and cannot be compared with them.
+Both models predict the change from the last reading and are compared with persistence, the standard baseline for short-term wind forecasting.
+
+| Model | MAE (m/s) | RMSE (m/s) | R² |
+|---|---|---|---|
+| Notebook model (1h ahead) | 0.495 | 0.666 | 0.838 |
+| Persistence (1h ahead) | 0.538 | 0.729 | 0.806 |
+| Notebook model (6h ahead) | 1.261 | 1.557 | 0.110 |
+| Persistence (6h ahead) | 1.753 | 2.170 | -0.728 |
+| Browser demo model | 0.531 | 0.712 | 0.765 |
+| Persistence (demo test period) | 0.547 | 0.727 | 0.755 |
+
+In this short demo the model beats persistence on every row above. The browser demo uses a smaller model (re-implemented in JavaScript); `python scripts/build_demo.py` rebuilds it.
+
+MAE, RMSE (m/s), MAPE (%, computed only where observed wind speed ≥ 0.5 m/s to avoid division by near-zero) and R².
+
+## About this implementation
+
+> **Reference implementation of my paper**, rebuilt in Python on synthetic data because the original SCADA data is confidential. Results will differ from the published numbers, and nothing here claims to reproduce them.
 
 - Data: the paper uses 736,416 hourly ERA5, MERRA-2, NASA POWER and WRF observations at 12 African sites, with SRTM and land-cover layers. Here a 6-site synthetic, spatially correlated set is used. A multi-site CSV loader (`timestamp,site,lat,lon,elevation,wind_speed`) is provided for real data.
 - Model size: three conv blocks (32, 64, 128) and three LSTM layers in the paper become two of each here. The 2-D 3×3 convolutions become 1-D.
 - Search budget: the paper's PSO uses 40 particles × 50 iterations; the defaults here are tiny (GA 6×3, PSO 4×3).
 - Not implemented: the Lyapunov-stability analysis and the capacity-factor/World Bank uplift analysis.
 
-## Metrics
+## Citation · 論文引用
 
-MAE, RMSE (m/s), MAPE (%, computed only where observed wind speed ≥ 0.5 m/s to avoid division by near-zero) and R².
+Er. Rishabh Aryan and Prof. Dr. Tryambak Hiwarkar (2026). "A Unified GeoAI Hybrid Framework for African Windscapes: Integrating Evolutionary Swarm, Fuzzy-Neuro Computing, and Probabilistic Spatio-Temporal Wind Forecasting for Sustainable Regional Energy Planning." *African Journal of Geography and Regional Planning (AJGRP)*.
 
-## Licence
+## License
 
-MIT © 2026 Rishabh Aryan. The paper itself is not included; please cite it as above.
+MIT © 2026 Rishabh Aryan. See [LICENSE](LICENSE). The paper itself is not included.
+
+## Other repositories by Rishabh Aryan
+
+- [xai-shap-lime-cnn-bilstm-attention-wind](https://github.com/Rishabh-bgp/xai-shap-lime-cnn-bilstm-attention-wind)
+- [wuweidl-daoist-gated-wind-forecasting](https://github.com/Rishabh-bgp/wuweidl-daoist-gated-wind-forecasting)
+- [iot-n8n-wind-turbine-predictive-maintenance](https://github.com/Rishabh-bgp/iot-n8n-wind-turbine-predictive-maintenance)
+- [multi-agent-turbine-fleet-chief-of-staff](https://github.com/Rishabh-bgp/multi-agent-turbine-fleet-chief-of-staff)
