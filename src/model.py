@@ -6,8 +6,8 @@ QUANTILES = (0.05, 0.25, 0.5, 0.75, 0.95)
 
 
 class ANFIS(nn.Module):
-    """Rule firing strengths w_r = prod_i exp(-(x_i-c_ri)^2 / 2 s_ri^2), normalised; output per rule
-    is a linear consequent. Returns normalised firing strengths and rule outputs as features."""
+    """Rule firing strengths w_r = prod_i exp(-(x_i-c_ri)^2 / 2 s_ri^2), normalized; output per rule
+    is a linear consequent. Returns normalized firing strengths and rule outputs as features."""
     def __init__(self, n_in, n_rules):
         super().__init__()
         self.c = nn.Parameter(torch.randn(n_rules, n_in)); self.log_s = nn.Parameter(torch.zeros(n_rules, n_in))
@@ -15,7 +15,7 @@ class ANFIS(nn.Module):
 
     def forward(self, x):                                       # (..., n_in)
         d = (x.unsqueeze(-2) - self.c) / self.log_s.exp()
-        w = torch.softmax(-0.5 * (d ** 2).sum(-1), -1)           # normalised firing strengths
+        w = torch.softmax(-0.5 * (d ** 2).sum(-1), -1)           # normalized firing strengths
         return torch.cat([w, w * self.conseq(x)], -1)
 
 

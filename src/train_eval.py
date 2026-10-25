@@ -4,7 +4,7 @@ import argparse, json, os
 import numpy as np, torch
 from .sites import synthetic_sites, load_sites_csv, to_tensor, windows
 from .model import GeoHybrid, pinball, QUANTILES
-from .optimise import ga, pso
+from .optimize import ga, pso
 from .metrics import regression_metrics
 
 
